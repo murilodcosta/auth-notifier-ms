@@ -1,0 +1,22 @@
+# IDEs and Editors
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# OS Specific
+Thumbs.db
+db.db
+Desktop.ini
+.DS_Store
+
+# Build/Packaging
+target/
+build/
+bin/
+
+# Local/Log files
+*.log
+.temp/
+.tmp/

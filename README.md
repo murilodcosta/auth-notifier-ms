@@ -53,7 +53,7 @@ docker-compose up -d
 
 Available Services:
 
-- PostgreSQL: localhost:5432 (Database: auth_db)
+- PostgreSQL: localhost:5433 (Database: auth_db)
 - RabbitMQ Management Dashboard: localhost:15672 (User: guest / Pass: guest)
 
 ---

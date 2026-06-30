@@ -32,7 +32,7 @@ public class AuthService {
     @Value("${jwt.expiration}")
     private long expirationTime;
 
-    private RabbitTemplate rabbitTemplate;
+    private final RabbitTemplate rabbitTemplate;
 
     public void register(RegisterRequestDto registerRequestDto, String role) {
         // Check if user already exists

@@ -20,3 +20,6 @@ bin/
 *.log
 .temp/
 .tmp/
+
+# Secrets
+.env

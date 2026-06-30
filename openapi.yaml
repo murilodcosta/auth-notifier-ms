@@ -1,0 +1,235 @@
+openapi: 3.0.3
+info:
+  title: Auth & Messaging Ecosystem API - Specification
+  description: This OpenAPI document defines the REST APIs exposed by the `auth-service` microservice, including registration, login, and profile operations under Spring Security authentication.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+externalDocs:
+  description: Auth Service GitHub Repository
+  url: github.com/murilodcosta/auth-notifier-ms
+paths:
+  /v1/auth/register:
+    post:
+      summary: Register a new user
+      description: Hashes the user password, persists user info in PostgreSQL, and publishes a `UserRegisteredEvent` to RabbitMQ.
+      parameters:
+        - name: role
+          in: query
+          description: Access role to assign to the new user.
+          required: true
+          schema:
+            type: string
+            enum: [USER, ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequestDto'
+      responses:
+        '200':
+          description: User registered successfully. Event sent to broker.
+        '400':
+          description: Bad request. Validation failed or email already taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/auth/login:
+    post:
+      summary: Authenticate user credentials
+      description: Verifies user credentials and returns a signed JSON Web Token (JWT) along with its expiration duration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequestDto'
+      responses:
+        '200':
+          description: Credentials authenticated successfully. Token issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponseDto'
+        '400':
+          description: Bad Request. Missing credentials or incorrect format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized. Invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/users/me:
+    get:
+      summary: Retrieve current user profile
+      description: Returns the user metadata stored in the authentication token principal.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponseDto'
+        '401':
+          description: Unauthorized. Missing or invalid Bearer JWT token.
+        '403':
+          description: Forbidden. Insufficient permissions.
+
+  /v1/users:
+    get:
+      summary: List all registered users (Admin only)
+      description: Retrieves a paginated list of all users registered in the database. Restricted to accounts with ADMIN privileges.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Zero-based page index.
+          required: false
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          description: Number of records per page.
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: sort
+          in: query
+          description: Sorting criteria in the format `property(,asc|desc)`.
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: Paginated users retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserResponse'
+        '401':
+          description: Unauthorized. Missing or invalid Bearer JWT token.
+        '403':
+          description: Forbidden. Requires ROLE_ADMIN access rights.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter your valid JSON Web Token (JWT) prefixing it with 'Bearer '.
+  schemas:
+    RegisterRequestDto:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          example: murilo_dev
+        email:
+          type: string
+          format: email
+          example: murilo@gmail.com
+        password:
+          type: string
+          format: password
+          example: securepass123
+    LoginRequestDto:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: murilo@gmail.com
+        password:
+          type: string
+          format: password
+          example: securepass123
+    TokenResponseDto:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtdXJpbG9AZ21haWwuY29tIiwiaWF0Ijox...
+        expiresIn:
+          type: integer
+          format: int64
+          example: 900000
+    UserResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: c0a80164-8e13-1b92-818e-131b92d60000
+        username:
+          type: string
+          example: murilo_dev
+        email:
+          type: string
+          format: email
+          example: murilo@gmail.com
+        role:
+          type: string
+          enum: [USER, ADMIN]
+          example: USER
+    PaginatedUserResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponseDto'
+        totalPages:
+          type: integer
+          example: 1
+        totalElements:
+          type: integer
+          example: 12
+        size:
+          type: integer
+          example: 20
+        number:
+          type: integer
+          example: 0
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          example: 2026-06-30T19:00:18.142Z
+        status:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: Bad Request
+        message:
+          type: string
+          example: Invalid credentials
+        path:
+          type: string
+          example: /v1/auth/login

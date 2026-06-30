@@ -1,4 +1,4 @@
-package dev.murilodcosta.notification_service.config;
+package dev.murilodcosta.auth_service.config;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;

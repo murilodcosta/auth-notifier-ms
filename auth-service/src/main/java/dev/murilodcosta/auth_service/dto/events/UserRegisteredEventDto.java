@@ -1,8 +1,8 @@
-package dev.murilodcosta.notification_service.dto;
+package dev.murilodcosta.auth_service.dto.events;
 
 import java.io.Serializable;
 
-public record UserRegisteredEvent(
+public record UserRegisteredEventDto(
         String name,
         String email
 ) implements Serializable {

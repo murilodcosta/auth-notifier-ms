@@ -25,6 +25,44 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     restart: unless-stopped
 
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/auth_db
+      RABBITMQ_ADDRESSES: rabbitmq:5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_VIRTUAL_HOST: /
+    depends_on:
+      - postgres
+      - rabbitmq
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env
+    environment:
+      RABBITMQ_ADDRESSES: rabbitmq:5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_VIRTUAL_HOST: /
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   rabbitmq_data:

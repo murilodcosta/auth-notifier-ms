@@ -1,6 +1,6 @@
-# Distributed Auth & Asynchronous Messaging Ecosystem
+# Distributed Auth & Asynchronous Messaging Ecosystem 🚀
 
-This project is multi-service ecosystem designed using a microservices-inspired pattern with **Java 23**, **Spring Boot 3.5.x**, **PostgreSQL**, and **RabbitMQ**. It implements secure token-based user authentication and decoupled asynchronous notification delivery.
+This project is a production-ready, multi-service ecosystem designed using a microservices-inspired pattern with **Java 23**, **Spring Boot 3.5.x**, **PostgreSQL**, and **RabbitMQ**. It implements secure token-based user authentication and decoupled asynchronous notification delivery.
 
 ---
 
@@ -38,12 +38,14 @@ auth-notifier-ms
 ├── auth-service                 # Stateful authentication service
 │   ├── src/main/java            # Java source files (Security, Entities, DTOs, Repos)
 │   ├── src/main/resources       # application.properties and db/migration/ scripts
+│   ├── Dockerfile               # Multi-stage Docker build recipe
 │   └── pom.xml                  # Service dependencies (Spring Security, JPA, AMQP, Flyway)
 ├── notification-service         # Stateless background notification worker
 │   ├── src/main/java            # Java source files (Consumers, Dtos, EmailService)
 │   ├── src/main/resources       # application.properties configuration
+│   ├── Dockerfile               # Multi-stage Docker build recipe
 │   └── pom.xml                  # Service dependencies (Spring AMQP, Spring Mail, Lombok)
-├── docker-compose.yml           # Database and Broker container specifications
+├── docker-compose.yml           # Database, Broker, and application container definitions
 ├── .env                         # Real secret configurations (Git ignored)
 ├── example.env                  # Environment template for configurations
 ├── openapi.yaml                 # Complete Swagger / OpenAPI API spec file
@@ -55,8 +57,8 @@ auth-notifier-ms
 ## ⚙️ Prerequisites
 
 To run and build this ecosystem locally, ensure you have:
-* **Java SDK**: Version `23` (or higher)
-* **Build System**: Maven (wrapped via `./mvnw`)
+* **Java SDK**: Version `23` (or higher, if compiling locally outside Docker)
+* **Build System**: Maven (wrapped via `./mvnw`, if compiling locally outside Docker)
 * **Container Runtime**: Docker and Docker Compose installed and running
 * **SMTP Provider**: Access to an SMTP credentials system (Gmail App Password, Resend, or SendGrid) for testing real email delivery.
 
@@ -71,39 +73,50 @@ git clone https://github.com/murilodcosta/auth-notifier-ms.git
 cd auth-notifier-ms
 ```
 
-### 2. Initialize Supporting Containers
-Spin up the required database and message broker services in detached mode from the root directory:
-```bash
-docker-compose up -d
-```
-
-* **PostgreSQL Database**: Accessible locally on port `5433` (DB: `auth_db`, user: `postgres`, pass: `postgres_password`).
-* **RabbitMQ Broker**: AMQP listener on port `5672`, and the **Management Web Console** dashboard on [http://localhost:15672](http://localhost:15672) (credentials: `guest`/`guest`).
-
-### 3. Configure Environment Secrets
+### 2. Configure Environment Secrets
 Copy the template environment configurations file and fill in your actual SMTP/CloudAMQP variables:
 ```bash
 cp example.env .env
 ```
 *(Note: `.env` is secure and ignored by git).*
 
-### 4. Compile and Run the Services
-Open two separate terminals:
+---
 
-* **Terminal 1: Start `auth-service` (Port `8080`)**
-  ```bash
-  cd auth-service
-  # Build and run with environment variables loaded
-  ./mvnw spring-boot:run
-  ```
-  *Flyway will validate and run schema migrations in the Postgres container automatically.*
+### 🐳 Option A: Running the Entire Ecosystem in Docker (Recommended)
+This method compiles, packages, and runs both services along with the PostgreSQL and RabbitMQ instances in containerized networks out of the box.
 
-* **Terminal 2: Start `notification-service` (Port `8081`)**
-  ```bash
-  cd notification-service
-  # Build and run with environment variables loaded
-  ./mvnw spring-boot:run
-  ```
+1. **Spin up the stack**:
+   ```bash
+   docker-compose up -d --build
+   ```
+2. **Access Endpoints & Dashboards**:
+   * **`auth-service`**: [http://localhost:8080](http://localhost:8080)
+   * **`notification-service`**: [http://localhost:8081](http://localhost:8081)
+   * **Swagger UI (Interactive API Docs)**: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+   * **RabbitMQ Management Dashboard**: [http://localhost:15672](http://localhost:15672) (User: `guest` / Pass: `guest`)
+
+---
+
+### 💻 Option B: Running Supporting Infrastructure in Docker + Apps Locally
+This method is perfect for active code changes, allowing you to run the applications in your IDE (IntelliJ IDEA) while connecting to the database and broker in Docker.
+
+1. **Start only Postgres and RabbitMQ**:
+   ```bash
+   docker-compose up -d postgres rabbitmq
+   ```
+   * *PostgreSQL Database*: Local host port `5433` (DB: `auth_db`, user: `postgres`, pass: `postgres_password`).
+   * *RabbitMQ Broker*: Port `5672` (Console: `15672`).
+2. **Start the Applications (with Environment variables loaded)**:
+   * **Start `auth-service` (Port `8080`)**
+     ```bash
+     cd auth-service
+     ./mvnw spring-boot:run
+     ```
+   * **Start `notification-service` (Port `8081`)**
+     ```bash
+     cd notification-service
+     ./mvnw spring-boot:run
+     ```
 
 ---
 
@@ -125,7 +138,7 @@ All endpoints are prefix-mapped to `/v1`. Authentication uses the standard `Bear
 The full, interactive API contracts are defined in [openapi.yaml](openapi.yaml). You can visualize and test them using any of the following methods:
 
 1. **Local Swagger UI**:
-   * Start `auth-service` locally using `./mvnw spring-boot:run`.
+   * Start `auth-service` (either via Docker or locally).
    * Open your browser and navigate to **[http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)**.
    * You can test the endpoints directly from the browser!
 2. **Swagger Editor**:

@@ -1,13 +1,16 @@
 package dev.murilodcosta.auth_service.service;
 
+import dev.murilodcosta.auth_service.config.RabbitMQConfig;
 import dev.murilodcosta.auth_service.config.TokenProvider;
 import dev.murilodcosta.auth_service.domain.entities.User;
 import dev.murilodcosta.auth_service.domain.enums.Role;
 import dev.murilodcosta.auth_service.dto.LoginRequestDto;
 import dev.murilodcosta.auth_service.dto.RegisterRequestDto;
 import dev.murilodcosta.auth_service.dto.TokenResponseDto;
+import dev.murilodcosta.auth_service.dto.events.UserRegisteredEventDto;
 import dev.murilodcosta.auth_service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,18 +32,31 @@ public class AuthService {
     @Value("${jwt.expiration}")
     private long expirationTime;
 
+    private RabbitTemplate rabbitTemplate;
+
     public void register(RegisterRequestDto registerRequestDto, String role) {
         // Check if user already exists
         if (userRepository.findByEmail(registerRequestDto.email()).isPresent()) {
             throw new IllegalArgumentException("Email is already taken");
         }
 
-        userRepository.save(User.builder()
+        User savedUser = userRepository.save(User.builder()
                 .name(registerRequestDto.username())
                 .email(registerRequestDto.email())
-                .role(role.equalsIgnoreCase("ADMIN") ? Role.ADMIN : Role.USER)
+                .role(Role.USER)
                 .password(passwordEncoder.encode(registerRequestDto.password()))
                 .build()
+        );
+
+        // Sending the asynchronous event to RabbitMQ
+        var event = new UserRegisteredEventDto(
+                savedUser.getName(),
+                savedUser.getEmail()
+        );
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE_NAME,
+                RabbitMQConfig.ROUTING_KEY,
+                event
         );
     }
 

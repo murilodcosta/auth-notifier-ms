@@ -1,6 +1,6 @@
-# Distributed Auth & Asynchronous Messaging Ecosystem 🚀
+# Distributed Auth & Asynchronous Messaging Ecosystem
 
-This project is a production-ready, multi-service ecosystem designed using a microservices-inspired pattern with **Java 23**, **Spring Boot 3.5.x**, **PostgreSQL**, and **RabbitMQ**. It implements secure token-based user authentication and decoupled asynchronous notification delivery.
+This study project is a multi-service ecosystem designed using a microservices-inspired pattern with **Java 23**, **Spring Boot 3.5.x**, **PostgreSQL**, and **RabbitMQ**. It implements secure token-based user authentication and decoupled asynchronous notification delivery.
 
 ---
 
@@ -8,26 +8,7 @@ This project is a production-ready, multi-service ecosystem designed using a mic
 
 The ecosystem is built from the ground up using a decoupled asynchronous communication model:
 
-```mermaid
-graph TD
-    Client[Client Browser / Postman]
-    subgraph Stateful Services
-        AuthService[auth-service:8080] <--> Postgres[(PostgreSQL:5433)]
-    end
-    subgraph Message Broker
-        RabbitExchange{RabbitMQ Exchange: user.events}
-        RabbitQueue[Queue: user.registration.notifications]
-        RabbitExchange --> RabbitQueue
-    end
-    subgraph Stateless Workers
-        NotificationService[notification-service:8081]
-    end
-
-    Client -- HTTP Request --> AuthService
-    AuthService -- Publishes Event --> RabbitExchange
-    RabbitQueue -- Consumes Event --> NotificationService
-    NotificationService -- Dispatches Welcome Mail --> Recipient[Recipient Inbox]
-```
+<img width="1024" height="559" alt="diagrama" src="https://github.com/user-attachments/assets/cfd64f70-903a-4afc-91c2-d769f92f0ae1" />
 
 ---
 
